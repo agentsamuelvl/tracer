@@ -2,6 +2,9 @@
 
 import cv2
 import numpy as np
+import subprocess
+import sys
+import os
 from pathlib import Path
 from datetime import datetime
 from tkinter import filedialog, messagebox
@@ -16,6 +19,32 @@ class ExportManager:
         self.svg_converter = BitmapToSVG()
         self.last_export_path = None
         self.export_history = []
+        self.use_potrace = True  # Enable/disable Potrace usage
+    
+    def get_potrace_path(self):
+        """Get path to Potrace executable"""
+        try:
+            # Get the directory where this script is located
+            script_dir = Path(__file__).parent.parent  # Go up one level from models/
+            tools_dir = script_dir / "utils"
+            
+            # Platform-specific executable name
+            if sys.platform == "win32":
+                potrace_name = "potrace.exe"
+            else:
+                potrace_name = "potrace"
+            
+            potrace_path = tools_dir / potrace_name
+            
+            if potrace_path.exists():
+                return str(potrace_path)
+            else:
+                print(f"Potrace not found at: {potrace_path}")
+                return None
+                
+        except Exception as e:
+            print(f"Error locating Potrace: {e}")
+            return None
     
     def export_with_dialog(self, bitmap_data, export_settings):
         """
@@ -49,18 +78,17 @@ class ExportManager:
             if not file_path:
                 return None  # User cancelled
             
-            # Convert to SVG
-            svg_content = self.svg_converter.bitmap_to_svg_simple(
-                processed_bitmap, 
-                export_settings['dpi'], 
-                None  # Pass None for output_path since we'll save it ourselves
-            )
+            # Choose conversion method
+            if self.use_potrace and self.get_potrace_path():
+                svg_content = self._convert_with_potrace(processed_bitmap, export_settings)
+            else:
+                svg_content = self._convert_with_builtin(processed_bitmap, export_settings)
 
             if not svg_content:
                 self._show_error("SVG Conversion Failed", "Could not convert bitmap to SVG")
                 return None
             
-            # Save SVG file only
+            # Save SVG file
             export_result = self._save_svg_file(
                 file_path, 
                 svg_content, 
@@ -84,6 +112,110 @@ class ExportManager:
             import traceback
             traceback.print_exc()
             return None
+    
+    def _convert_with_potrace(self, bitmap, export_settings):
+        """Convert bitmap to SVG using Potrace"""
+        try:
+            potrace_path = self.get_potrace_path()
+            if not potrace_path:
+                print("Potrace not available, falling back to built-in converter")
+                return self._convert_with_builtin(bitmap, export_settings)
+            
+            # Create temporary files
+            temp_dir = Path.cwd() / "temp"
+            temp_dir.mkdir(exist_ok=True)
+            
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            temp_bmp = temp_dir / f"temp_{timestamp}.pbm"
+            temp_svg = temp_dir / f"temp_{timestamp}.svg"
+            
+            try:
+                cv2.imwrite(str(temp_bmp), bitmap) 
+                
+                # Run Potrace
+                potrace_result = self._run_potrace(potrace_path, temp_bmp, temp_svg, export_settings)
+                
+                if potrace_result and temp_svg.exists():
+                    # Read the generated SVG
+                    with open(temp_svg, 'r', encoding='utf-8') as f:
+                        svg_content = f.read()
+                    
+                    print("Successfully converted with Potrace")
+                    return svg_content
+                else:
+                    print("Potrace conversion failed, falling back to built-in")
+                    return self._convert_with_builtin(bitmap, export_settings)
+                    
+            finally:
+                # Clean up temporary files
+                for temp_file in [temp_bmp, temp_svg]:
+                    if temp_file.exists():
+                        temp_file.unlink()
+                        
+        except Exception as e:
+            print(f"Error in Potrace conversion: {e}")
+            return self._convert_with_builtin(bitmap, export_settings)
+    
+
+    def _run_potrace(self, potrace_path, input_pbm, output_svg, export_settings):
+        """Run Potrace executable"""
+        try:
+            # Potrace command line options
+            cmd = [
+                potrace_path,
+                str(input_pbm),
+                "-s",  # SVG output
+                "-o", str(output_svg),
+                "--tight",  # Tight bounding box
+                "-t", "2",  # Suppress speckles (2 pixel threshold)
+                "--invert",  # Invert colors (black on white)
+            ]
+            
+            # Add DPI scaling if needed
+            dpi = export_settings.get('dpi', 96)
+            if dpi != 72:  # Potrace default is 72 DPI
+                scale_factor = dpi / 72.0
+                cmd.extend(["-r", str(int(dpi))])
+            
+            print(f"Running Potrace: {' '.join(cmd)}")
+            
+            # Run Potrace
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=30  # 30 second timeout
+            )
+            
+            if result.returncode == 0:
+                print("Potrace completed successfully")
+                return True
+            else:
+                print(f"Potrace failed with return code {result.returncode}")
+                print(f"Error output: {result.stderr}")
+                return False
+                
+        except subprocess.TimeoutExpired:
+            print("Potrace timed out")
+            return False
+        except Exception as e:
+            print(f"Error running Potrace: {e}")
+            return False
+    
+    def _convert_with_builtin(self, bitmap, export_settings):
+        """Fallback: Convert using built-in SVG converter"""
+        try:
+            print("Using built-in SVG converter")
+            return self.svg_converter.bitmap_to_svg_simple(
+                bitmap, 
+                export_settings['dpi'], 
+                None  # Don't save, just return content
+            )
+        except Exception as e:
+            print(f"Built-in converter failed: {e}")
+            return None
+    
+    # ... rest of your existing methods stay the same ...
     
     def _validate_export_data(self, bitmap_data, export_settings):
         """Validate that we have all required data for export"""
@@ -146,7 +278,11 @@ class ExportManager:
         dpi = export_settings.get('dpi', 96)
         dpi_str = f"_{dpi}dpi"
         
-        return f"tool_outline{tolerance_str}{dpi_str}_{timestamp}.svg"
+        # Indicate conversion method
+        method = "potrace" if (self.use_potrace and self.get_potrace_path()) else "builtin"
+        method_str = f"_{method}"
+        
+        return f"tool_outline{tolerance_str}{dpi_str}{method_str}_{timestamp}.svg"
     
     def _show_save_dialog(self, suggested_filename):
         """Show file save dialog"""
@@ -177,15 +313,14 @@ class ExportManager:
         try:
             file_path = Path(file_path)
             
-            # Save main SVG file
-            svg_path = self.svg_converter._save_svg_file(svg_content, file_path)
-            if not svg_path:
-                return export_result
+            # Save SVG content directly
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(svg_content)
             
-            export_result['svg_path'] = svg_path
+            export_result['svg_path'] = str(file_path)
             export_result['success'] = True
             
-            print(f"SVG exported successfully: {svg_path}")
+            print(f"SVG exported successfully: {file_path}")
             return export_result
             
         except Exception as e:
@@ -205,8 +340,11 @@ class ExportManager:
             svg_path = Path(export_result['svg_path'])
             file_size = svg_path.stat().st_size
             
+            method = "Potrace" if (self.use_potrace and self.get_potrace_path()) else "Built-in"
+            
             message = (
                 f"Export completed successfully!\n\n"
+                f"Method: {method} conversion\n"
                 f"File saved: {svg_path.name} ({file_size:,} bytes)\n"
                 f"Location: {svg_path.parent}"
             )
