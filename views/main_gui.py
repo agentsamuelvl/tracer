@@ -57,7 +57,7 @@ class View:
                 # Running as script - go up from views/ to project root
                 base_path = Path(__file__).parent.parent
             
-            icon_path = base_path / "app_icon.ico"
+            icon_path = base_path / "app_icon (2).ico"
             
             if icon_path.exists():
                 self.root.iconbitmap(str(icon_path))
@@ -749,7 +749,7 @@ class ControlPanel:
 
     def _create_control_widgets(self):
         # Process Image button
-        self.process_button = ttk.Button(self.control_frame, text="Process Image", takefocus=False, command=self.process_image)
+        self.process_button = ttk.Button(self.control_frame, text="Trace Outline", takefocus=False, command=self.process_image)
         self.process_button.pack(fill='x', padx=10, pady=5)
 
         # Reset button
