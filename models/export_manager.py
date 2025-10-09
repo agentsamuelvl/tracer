@@ -24,24 +24,21 @@ class ExportManager:
     def get_potrace_path(self):
         """Get path to Potrace executable"""
         try:
-            # Get the directory where this script is located
-            script_dir = Path(__file__).parent.parent  # Go up one level from models/
-            tools_dir = script_dir / "utils"
-            
-            # Platform-specific executable name
-            if sys.platform == "win32":
-                potrace_name = "potrace.exe"
+            if getattr(sys, 'frozen', False):
+                # Running as executable
+                base_path = Path(sys._MEIPASS)
+                potrace_path = base_path / "utils" / "potrace.exe"
             else:
-                potrace_name = "potrace"
-            
-            potrace_path = tools_dir / potrace_name
+                # Running in development
+                script_dir = Path(__file__).parent.parent
+                tools_dir = script_dir / "utils"
+                potrace_path = tools_dir / "potrace.exe"
             
             if potrace_path.exists():
                 return str(potrace_path)
             else:
                 print(f"Potrace not found at: {potrace_path}")
                 return None
-                
         except Exception as e:
             print(f"Error locating Potrace: {e}")
             return None

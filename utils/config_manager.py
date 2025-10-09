@@ -6,12 +6,16 @@ import numpy as np
 from pathlib import Path
 import shutil
 from datetime import datetime
+import sys
 
 
 class ConfigManager:
     """Manages camera configuration parameters"""
 
-    def __init__(self, config_dir="config"):
+    def __init__(self, config_dir=None):
+
+        if config_dir is None:
+            config_dir = self.get_config_dir()
         self.config_dir = Path(config_dir)
         self.config_file = self.config_dir / "camera_config.json"
         self.backup_file = self.config_dir / "camera_config_backup.json"
@@ -21,6 +25,20 @@ class ConfigManager:
 
         # Load or create default config
         self.config = self._load_or_create_config()
+
+    def get_config_dir(self):
+        """Get config directory that works both in development and as executable"""
+        if getattr(sys, 'frozen', False):
+            # Running as compiled executable
+            base_path = Path(sys._MEIPASS)  # PyInstaller temp folder
+            # But we want to save config in user's directory, not temp
+            import os
+            user_config = Path.home() / '.tool_outline_app' / 'config'
+            user_config.mkdir(parents=True, exist_ok=True)
+            return user_config
+        else:
+            # Running in normal Python
+            return Path('config')
 
     def _get_default_config(self):
         """Return default camera configuration using your exact original values"""
