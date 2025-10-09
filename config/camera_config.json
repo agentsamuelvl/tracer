@@ -1,6 +1,6 @@
 {
     "camera_matrix": {
-        "fx": 3863.59,
+        "fx": 3863.57,
         "fy": 3867.87,
         "cx": 1951.68,
         "cy": 1085.77
@@ -27,7 +27,7 @@
     },
     "metadata": {
         "camera_model": "Default Camera",
-        "calibration_date": "2025-09-12",
+        "calibration_date": "2025-10-09",
         "notes": "Scaled from 1920x1080 to 3840x2160"
     }
 }

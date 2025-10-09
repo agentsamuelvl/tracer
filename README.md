@@ -1,4 +1,4 @@
-# Contour Tracer
+# Tracer
 
 Computer vision application for detecting and tracing tool contours using ArUco markers for scale reference.
 
