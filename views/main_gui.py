@@ -57,7 +57,7 @@ class View:
                 # Running as script - go up from views/ to project root
                 base_path = Path(__file__).parent.parent
             
-            icon_path = base_path / "app_icon (2).ico"
+            icon_path = base_path / "app_icon.ico"
             
             if icon_path.exists():
                 self.root.iconbitmap(str(icon_path))
@@ -982,7 +982,7 @@ class CameraSettingsWindow:
                 # Running as script - go up from views/ to project root
                 base_path = Path(__file__).parent.parent
             
-            icon_path = base_path / "settings.ico"
+            icon_path = base_path / "settings_icon.ico"
             
             if icon_path.exists():
                 self.window.iconbitmap(str(icon_path))
