@@ -2,9 +2,6 @@
 
 import cv2
 import numpy as np
-import subprocess
-import sys
-import os
 from pathlib import Path
 from datetime import datetime
 from tkinter import filedialog, messagebox
@@ -75,17 +72,18 @@ class ExportManager:
             if not file_path:
                 return None  # User cancelled
             
-            # Choose conversion method
-            if self.use_potrace and self.get_potrace_path():
-                svg_content = self._convert_with_potrace(processed_bitmap, export_settings)
-            else:
-                svg_content = self._convert_with_builtin(processed_bitmap, export_settings)
+            # Convert to SVG
+            svg_content = self.svg_converter.bitmap_to_svg_simple(
+                processed_bitmap, 
+                export_settings['dpi'], 
+                None  # Pass None for output_path since we'll save it ourselves
+            )
 
             if not svg_content:
                 self._show_error("SVG Conversion Failed", "Could not convert bitmap to SVG")
                 return None
             
-            # Save SVG file
+            # Save SVG file only
             export_result = self._save_svg_file(
                 file_path, 
                 svg_content, 
@@ -278,11 +276,7 @@ class ExportManager:
         dpi = export_settings.get('dpi', 96)
         dpi_str = f"_{dpi}dpi"
         
-        # Indicate conversion method
-        method = "potrace" if (self.use_potrace and self.get_potrace_path()) else "builtin"
-        method_str = f"_{method}"
-        
-        return f"tool_outline{tolerance_str}{dpi_str}{method_str}_{timestamp}.svg"
+        return f"tool_outline{tolerance_str}{dpi_str}_{timestamp}.svg"
     
     def _show_save_dialog(self, suggested_filename):
         """Show file save dialog"""
@@ -313,14 +307,15 @@ class ExportManager:
         try:
             file_path = Path(file_path)
             
-            # Save SVG content directly
-            with open(file_path, 'w', encoding='utf-8') as f:
-                f.write(svg_content)
+            # Save main SVG file
+            svg_path = self.svg_converter._save_svg_file(svg_content, file_path)
+            if not svg_path:
+                return export_result
             
-            export_result['svg_path'] = str(file_path)
+            export_result['svg_path'] = svg_path
             export_result['success'] = True
             
-            print(f"SVG exported successfully: {file_path}")
+            print(f"SVG exported successfully: {svg_path}")
             return export_result
             
         except Exception as e:
@@ -340,11 +335,8 @@ class ExportManager:
             svg_path = Path(export_result['svg_path'])
             file_size = svg_path.stat().st_size
             
-            method = "Potrace" if (self.use_potrace and self.get_potrace_path()) else "Built-in"
-            
             message = (
                 f"Export completed successfully!\n\n"
-                f"Method: {method} conversion\n"
                 f"File saved: {svg_path.name} ({file_size:,} bytes)\n"
                 f"Location: {svg_path.parent}"
             )
