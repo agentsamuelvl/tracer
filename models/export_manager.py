@@ -157,6 +157,9 @@ class ExportManager:
     def _run_potrace(self, potrace_path, input_pbm, output_svg, export_settings):
         """Run Potrace executable"""
         try:
+            import subprocess
+            import sys
+            
             # Potrace command line options
             cmd = [
                 potrace_path,
@@ -170,18 +173,18 @@ class ExportManager:
             
             # Add DPI scaling if needed
             dpi = export_settings.get('dpi', 96)
-            if dpi != 72:  # Potrace default is 72 DPI
-                scale_factor = dpi / 72.0
+            if dpi != 72:
                 cmd.extend(["-r", str(int(dpi))])
             
             print(f"Running Potrace: {' '.join(cmd)}")
             
-            # Run Potrace
+            # Run Potrace without showing window
             result = subprocess.run(
                 cmd,
                 capture_output=True,
                 text=True,
-                timeout=30  # 30 second timeout
+                timeout=30,
+                creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
             )
             
             if result.returncode == 0:
