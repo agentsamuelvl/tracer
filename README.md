@@ -1,25 +1,22 @@
 # Tracer
 
-Computer vision application for detecting and tracing tool contours using ArUco markers for scale reference.
+Computer vision application for detecting and tracing shape contours and generating outlines as svg files. 
 
 ## Features
 
 - Real-time camera feed with undistortion correction
 - ArUco marker detection for automatic scaling
 - Contour detection using brightness thresholding or Canny edge detection
-- Tolerance adjustment for manufacturing specifications
-- SVG export functionality
+- Spacing option for foam cutouts
+- SVG conversion and export
 - Camera parameter calibration interface
 
 ## Requirements
 
 - Python 3.8+
-- OpenCV camera (USB or built-in)
-- ArUco markers for scale reference
+- 4K camera (USB or built-in)
+- ArUco markers for scale reference (must be 1 inch by 1 inch)
 
 ## Installation
 
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/contour-tracer.git
-cd contour-tracer
+
