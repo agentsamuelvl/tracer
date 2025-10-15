@@ -6,7 +6,7 @@ import gc
 import time
 import threading
 from threading import Thread
-from .undistort import Undistort
+from utils.undistort import Undistort
 from utils.message_bus import MessageBus, Message
 from utils.config_manager import ConfigManager
 from tkinter import messagebox

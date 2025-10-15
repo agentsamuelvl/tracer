@@ -1,0 +1,33 @@
+{
+    "camera_matrix": {
+        "fx": 3863.58,
+        "fy": 3867.87,
+        "cx": 1951.68,
+        "cy": 1085.77
+    },
+    "distortion_coefficients": {
+        "k1": -0.378326,
+        "k2": 0.340774,
+        "p1": 0.000223,
+        "p2": 0.000922,
+        "k3": -0.692067,
+        "k4": 0.0,
+        "k5": 0.0,
+        "k6": 0.0,
+        "s1": 0.0,
+        "s2": 0.0,
+        "s3": 0.0,
+        "s4": 0.0,
+        "tx": 0.0,
+        "ty": 0.0
+    },
+    "reference_resolution": {
+        "width": 3840,
+        "height": 2160
+    },
+    "metadata": {
+        "camera_model": "Default Camera",
+        "calibration_date": "2025-10-10",
+        "notes": "Scaled from 1920x1080 to 3840x2160"
+    }
+}

@@ -12,7 +12,7 @@ from utils.message_bus import MessageBus, Message
 
 class View:
 
-    def __init__(self, parent, controller, window_title="Contour Tracer", theme="dark"):
+    def __init__(self, parent, controller, window_title="Tracer", theme="dark"):
         """Initialize the main application"""
         self.root = parent
         self.window_title = window_title
@@ -40,6 +40,34 @@ class View:
         self.root.title(self.window_title)
         self.root.geometry(f"{screen_width}x{screen_height}")
         self.root.minsize(1000, 700)
+
+        self._set_window_icon()
+
+    def _set_window_icon(self):
+        """Set the window icon"""
+        try:
+            import sys
+            from pathlib import Path
+            
+            # Get the correct path whether running as script or executable
+            if getattr(sys, 'frozen', False):
+                # Running as compiled executable
+                base_path = Path(sys._MEIPASS)
+            else:
+                # Running as script - go up from views/ to project root
+                base_path = Path(__file__).parent.parent
+            
+            icon_path = base_path / "app_icon.ico"
+            
+            if icon_path.exists():
+                self.root.iconbitmap(str(icon_path))
+                print(f"✓ Icon loaded from: {icon_path}")
+            else:
+                print(f"⚠ Icon not found at: {icon_path}")
+                
+        except Exception as e:
+            print(f"Could not load icon: {e}")
+            # Silently fail - app will just use default icon
 
     def _setup_theme(self):
         """Setup the UI theme"""
@@ -689,7 +717,7 @@ class ControlPanel:
         self._tolerance_update_job = None
         self.canny_low_threshold_value = 30
         self.canny_high_threshold_value = 90
-        self.brightness_threshold_value = 80
+        self.brightness_threshold_value = 165
         self._create_control_frame()
         self._create_control_widgets()
 
@@ -721,7 +749,7 @@ class ControlPanel:
 
     def _create_control_widgets(self):
         # Process Image button
-        self.process_button = ttk.Button(self.control_frame, text="Process Image", takefocus=False, command=self.process_image)
+        self.process_button = ttk.Button(self.control_frame, text="Trace Outline", takefocus=False, command=self.process_image)
         self.process_button.pack(fill='x', padx=10, pady=5)
 
         # Reset button
@@ -797,7 +825,7 @@ class ControlPanel:
         self.canny_high_threshold.pack(fill='x', padx=10, pady=5)
 
         # Tolerance control
-        ttk.Label(params_frame, text="Tolerance (mm)").pack(
+        ttk.Label(params_frame, text="Spacing (mm)").pack(
             anchor='w', padx=10, pady=(15, 0))
         self.tolerance_label = ttk.Label(params_frame, text="0.0")
         self.tolerance_label.pack(anchor='w', padx=10)
@@ -915,6 +943,9 @@ class CameraSettingsWindow:
         self.window.geometry("600x700")
         self.window.resizable(True, True)
 
+        # Set window icon if available
+        self._set_window_icon()
+
         # configure styles
         self._configure_focus_styles()
 
@@ -937,6 +968,30 @@ class CameraSettingsWindow:
         # Handle window close
         self.window.protocol("WM_DELETE_WINDOW", self._close_window)
 
+    def _set_window_icon(self):
+        """Set the popup window icon"""
+        try:
+            import sys
+            from pathlib import Path
+            
+            # Get the correct path whether running as script or executable
+            if getattr(sys, 'frozen', False):
+                # Running as compiled executable
+                base_path = Path(sys._MEIPASS)
+            else:
+                # Running as script - go up from views/ to project root
+                base_path = Path(__file__).parent.parent
+            
+            icon_path = base_path / "settings_icon.ico"
+            
+            if icon_path.exists():
+                self.window.iconbitmap(str(icon_path))
+                print(f"✓ Settings window icon loaded from: {icon_path}")
+            else:
+                print(f"⚠ Icon not found at: {icon_path}")
+                
+        except Exception as e:
+            print(f"Could not load settings window icon: {e}")
     def _load_current_config(self):
         """Load current camera configuration"""
         try:
@@ -1364,6 +1419,7 @@ class CameraSettingsWindow:
 
 
 class StatusBar:
+     
     def __init__(self, parent, controller, window_color, frame_color, border_color):
         self.parent = parent
         self.controller = controller
@@ -1399,7 +1455,7 @@ class StatusBar:
         self.status_frame.pack_propagate(False)
         
         # Temporary label to make the status bar visible
-        self.status_label = ttk.Label(self.status_frame, text="Status: Ready")
+        self.status_label = ttk.Label(self.status_frame, text="Tracer 1.0.0")
         self.status_label.pack(pady=4, side = 'left', padx=10)
 
     def update_status(self, message: Message):
