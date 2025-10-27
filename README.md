@@ -19,4 +19,5 @@ Computer vision application for detecting and tracing shape contours and generat
 
 ## Installation
 
+See releases for latest download information.
 
